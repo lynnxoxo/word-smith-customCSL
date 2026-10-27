@@ -4963,6 +4963,7 @@ export const DEFAULT_SETTINGS = {
 	// tokens, and the marks while writing
 	citeLibrary:              '',
 	citeStyle:                'apa',
+	citeCslPath:              '',
 	citeHeading:              '',
 	citeCustomInText:         '{etal} {year}[, {page}]',
 	citeCustomAround:         'parens',

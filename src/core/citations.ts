@@ -53,6 +53,7 @@ export const WS_CITE_STYLES: { id: string; name: string; heading: string }[] = [
 	{ id: 'mla', name: 'MLA 9', heading: 'Works Cited' },
 	{ id: 'ieee', name: 'IEEE', heading: 'References' },
 	{ id: 'custom', name: 'Custom (tokens)', heading: 'References' },
+	{ id: 'csl', name: 'Custom CSL file', heading: 'References' },
 ];
 export const WS_CITE_CUSTOM_DEFAULT: WsCiteCustom = {
 	inText: '{etal} {year}[, {page}]',
