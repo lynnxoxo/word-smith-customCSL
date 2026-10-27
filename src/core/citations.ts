@@ -827,7 +827,8 @@ export function wsCiter(style: string, lib: Map<string, WsRef>, custom?: WsCiteC
 
 // what a citation is never looked for in: the frontmatter, code (fenced and inline) and comments, blanked to
 // spaces so every place keeps its offset
-function wsCiteMask(s: string): string {
+
+export function wsCiteMask(s: string): string {
 	const blank = (m: string) => m.replace(/[^\n]/g, ' ');
 	return s.replace(/^---[ \t]*\n[\s\S]*?\n---[ \t]*(?=\n|$)/, blank)
 		.replace(/(^|\n)(```|~~~)[^\n]*\n[\s\S]*?(\n\2[^\n]*|$)/g, blank)

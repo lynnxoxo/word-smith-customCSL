@@ -97,7 +97,7 @@ export class WordSmithCslProcessor {
             language
         );
 
-        this.engine.setOutputFormat('html');
+        this.engine.setOutputFormat('text');
     }
 
     formatDocument(citations: WsCite[]): string[] {

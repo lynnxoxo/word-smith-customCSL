@@ -2582,21 +2582,61 @@ export class WordSmithSettingTab extends PluginSettingTab {
 						this.onRefresh(() => { show(); if (btn.hasClass('mod-warning')) disarm(); });
 					});
 				} },			
-			{ name: 'Custom CSL file',  desc: 'Path to a .csl style file in your Obsidian vault.', visible: () =>  s.citeStyle === 'csl',
-    				render: (st) => {
-        				st.addText((t) => {
-            				t.setPlaceholder('Styles/archaeology.csl')
-                				.setValue(s.citeCslPath || '')
-                					.onChange((value) => {
-                    				void (async () => {
-                        				s.citeCslPath = value.trim();
-                        				await plugin.saveSettings();
-                        				await plugin.citeLoad();
-                    				})();
-                				   });
-        				  });
-    				 }
-				},
+			
+{
+    name: 'Custom CSL file',
+    desc: 'Select a .csl file in your vault.',
+    visible: () => s.citeStyle === 'csl',
+    render: (st) => {
+
+        // Display current CSL status
+        const status = () =>
+            plugin._citeCslError
+                ? 'CSL error: ' + plugin._citeCslError
+                : plugin._citeCsl
+                    ? 'CSL style loaded successfully.'
+                    : 'No CSL style loaded.';
+
+        st.setDesc(status());
+
+        // Text field for the CSL file path
+        st.addText((t) => {
+            t.setPlaceholder('Styles/archaeology.csl')
+                .setValue(s.citeCslPath || '')
+                .onChange((value) => {
+                    void (async () => {
+                        s.citeCslPath = value.trim();
+
+                        await plugin.saveSettings();
+                        await plugin.citeLoad();
+
+                        st.setDesc(status());
+                    })();
+                });
+        });
+
+        // Button to manually reload and test the CSL file
+        st.addButton((button) => {
+            button
+                .setButtonText('Test CSL')
+                .onClick(() => {
+                    void (async () => {
+                        await plugin.citeLoad();
+
+                        const message = status();
+
+                        st.setDesc(message);
+
+                        new Notice(
+                            'Word-Smith: ' + message,
+                            8000
+                        );
+                    })();
+                });
+        });
+    }
+},
+			
 			{ name: 'Citation preview', desc: 'Two sources from your library, or two samples while there is none.',
 				render: (st) => {
 					const box = this.block(st, 'ws-cite-preview');

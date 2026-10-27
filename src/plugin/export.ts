@@ -13,6 +13,7 @@ import { WS_IMAGE_MIME, wsImageRefRe, wsParseImageRef, wsMdImageLink, wsRelPath,
 import type { WsWheelAcc } from '../core/preamble';
 import { wsCiteMissing, wsCiteMissingText, wsCiteSections, wsCiteThin, wsCiteThinText } from '../core/citations';
 import { wsT, wsTIn, wsUiJoin } from '../core/ui-text';
+import { wsCslExport } from '../core/csl-export';
 import { wsPageStarts, WS_FRAME_SHELL, WS_TITLE_SIZE_EM, WS_EXPORT_FOLDER_HEADINGS_DEFAULT, WS_EXPORT_PREVIEW_AUTO_BYTES, wsHtmlBlocks, wsDropCallouts, wsDropTags, WS_PAPERS, wsAnchorId, wsBuildDocx, wsBuildEpub, wsCatch, wsCtxScope, wsExportRoot, wsFileHeadLevel, wsFormatHasPages, wsHeadSizeEm, wsHostTint, wsJoinMark, wsLineOfSnippet, wsLineTwips, wsPaperMicrons, wsPaperOf, wsSnippetOf, wsTitleWords, wsTocSteps, wsTwipIn, wsGlyphWord, wsIconInto, wsIsFile, wsIsFolder, wsStr, wsErrMsg, wsElOf } from '../core/preamble';
 import type WordSmith from './plugin';
 
@@ -1774,10 +1775,42 @@ export const exportMethods = {
 	// (see wsCiteSections). Called after the words are counted, so the list at the back is no word of the book;
 	// a Markdown export never calls it and keeps [@key] as written.
 	// …and answers the keys the library does not hold (A670), which print as typed
+	
 	exportCite(this: WordSmith, sections: WsExportSection[]): string[] {
-		let missing: string[] = [];
-		try { missing = wsCiteMissing(sections, this.citeLibrary()); wsCiteSections(sections, this.citer()); } catch (_) { wsCatch('exportCite', _); }
-		return missing;
+	    const missing = wsCiteMissing(
+	        sections,
+	        this.citeLibrary()
+	    );
+
+	    // CSL processing uses a separate document-wide engine.
+	    if (this.settings.citeStyle === 'csl') {
+
+	        if (!this._citeCsl) {
+	            throw new Error(
+	                this._citeCslError ||
+	                'Custom CSL style has not been loaded.'
+	            );
+	        }
+
+	        wsCslExport(
+	            sections,
+	            this._citeCsl.styleXml,
+	            this._citeCsl.localeXml,
+	            this.citeLibrary(),
+	            this.settings.citeHeading || 'References'
+	        );
+
+	        return missing;
+	    }
+
+	    // Preserve the existing formatter for other styles.
+	    try {
+	        wsCiteSections(sections, this.citer());
+	    } catch (e) {
+	        wsCatch('exportCite', e);
+	    }
+
+	    return missing;
 	},
 
 	exportToMarkdown(this: WordSmith, sections: WsExportSection[], o: WsExportRun) {
@@ -4310,8 +4343,27 @@ export const exportMethods = {
 				for (const sec of secs) words += this.countWords(sec.markdown);
 				// the citations as the export will write them, the list at the back (A572 step 4); after the count
 				// …AND A MARKDOWN EXPORT WRITES NONE (A867, Fable's review): it keeps [@key] for whoever compiles it next, so its
-				// preview shows the keys as the file will have them
-				if (o.format !== 'md') this.exportCite(secs);
+				// preview shows the keys as the file will have them				
+				if (o.format !== 'md') {
+				    try {
+				        this.exportCite(secs);
+				    } catch (error) {
+				        const message = error instanceof Error
+				            ? error.message
+				            : String(error);
+
+				        prevCol.empty();
+
+				        prevCol.createDiv({
+				            cls: 'ws-export-prevnone',
+				            text: 'Citation formatting failed: ' + message
+				        });
+
+				        prevSig = null;
+				        return;
+				    }
+				}
+
 				// ── THE SAME DOCUMENT IS NOT REDRAWN ─────────────────
 				//
 				// THE PROSE ITSELF, not a count of it. Lengths collide — an edit that
@@ -4719,7 +4771,46 @@ export const exportMethods = {
 			// …AND A SOURCE CITED WITHOUT A YEAR OR A TITLE (#60's rest), read before the citations are written in
 			let thin: string[] = [];
 			try { thin = wsCiteThin(sections, this.citeLibrary()); } catch (_) { wsCatch('exportCiteThin', _); }
-			const missing = this.exportCite(sections);
+			
+			let missing: string[];
+
+			
+try {
+    console.info('[Word-Smith CSL] Starting citation export', {
+        style: this.settings.citeStyle,
+        cslPath: this.settings.citeCslPath,
+        bibliographySize: this.citeLibrary().size,
+        sections: sections.length
+    });
+
+    missing = this.exportCite(sections);
+
+    console.info(
+        '[Word-Smith CSL] Citation export completed successfully'
+    );
+
+} catch (error) {
+    console.error(
+        '[Word-Smith CSL] Citation export failed:',
+        error
+    );
+
+    console.error(
+        '[Word-Smith CSL] Stack trace:',
+        error instanceof Error ? error.stack : 'Unavailable'
+    );
+
+    const message = error instanceof Error
+        ? error.message
+        : String(error);
+
+    new Notice(
+        'Word-Smith: CSL export failed — ' + message,
+        15000
+    );
+
+    return;
+}
 			const lib = this.settings.citeLibrary || '';
 			const said = [missing.length ? wsCiteMissingText(missing, lib) : '', thin.length ? wsCiteThinText(thin, lib) : ''].filter(Boolean);
 			if (said.length) this.exportNotice(said.join(' '), 12000);
