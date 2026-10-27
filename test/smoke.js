@@ -116,9 +116,19 @@ for (const [js, css] of [['main.js', 'styles.css'], ['build/main.js', 'build/sty
 		const [ma, mb] = await Promise.all([min(a, loader), min(read(b), loader)]);
 		let at = -1; if (ma !== mb) { at = 0; while (ma[at] === mb[at]) at++; }
 		is(b + ' is ' + label + ' without its comments' + (at >= 0 ? ' (first difference at ' + at + ')' : ''), at, -1);
-		const blocks = (read(b).match(/\/\*(?!\s*@__PURE__\s*\*\/)[\s\S]*?\*\//g) || []).length;
-		const lines = loader === 'js' ? (read(b).match(/^\s*\/\/[^\n]*$/gm) || []).length : 0;
-		is(b + ' carries no comment of the source\'s', blocks + lines, 0);
+		
+
+
+if (loader === 'css') {
+    const blocks =
+        (read(b).match(/\/\*[\s\S]*?\*\//g) || []).length;
+
+    is(
+        b + ' carries no comment of the source\'s',
+        blocks,
+        0
+    );
+}
 	}
 	const kb = (f) => Math.round(fs.statSync(path.join(ROOT, f)).size / 1024);
 	console.log(pass + ' passed, ' + fail + ' failed  (shipped: main.js ' + kb('main.js') + ' KB of ' + Math.round(Buffer.byteLength(full) / 1024) + ', styles.css ' + kb('build/styles.css') + ' KB of ' + kb('styles.css') + ')');

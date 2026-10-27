@@ -1217,6 +1217,16 @@ export default class WordSmith extends WsPluginWithAreas {
 	_citeLibError: string;
 	_citeGen: number;
 	_citeTimer: number | null;
+
+	/** Loaded custom CSL style and locale. */
+	_citeCsl: {
+	    styleXml: string;
+	    localeXml: string;
+	} | null = null;
+
+	/** CSL loading or validation error. */
+	_citeCslError: string = '';
+
 	_orgAt: () => string;
 	_orgBackMap: { gen: number; map: Map<string, string[]> } | null;
 	_orgBarSay: () => string;

@@ -18,6 +18,8 @@ import type { WsRef, WsCiter } from '../core/citations';
 import type { WsEngine } from '../core/lang-engine';
 import type WordSmith from './plugin';
 import type { WsStructSource } from './plugin';
+import { loadCsl } from '../core/csl-loader';
+import { WordSmithCslProcessor } from '../core/csl-processor';
 
 export const storesMethods = {
 
@@ -2570,7 +2572,43 @@ export const storesMethods = {
 			}
 		}
 		this._citeLib = lib;
-		this._citeLibError = error;
+		this._citeLibError = error;		
+		// Load custom CSL resources when selected.
+		this._citeCsl = null;
+		this._citeCslError = '';
+
+		if (this.settings.citeStyle === 'csl') {
+		    const stylePath =
+		        String(this.settings.citeCslPath || '').trim();
+
+		    if (!stylePath) {
+		        this._citeCslError =
+ 		           'No custom CSL file selected.';
+		    } else {
+		        try {
+		            const loaded = await loadCsl(
+		                this.app,
+		                stylePath
+		            );
+
+		            // Initialize a temporary processor to
+		            // validate the style and locale.
+		            new WordSmithCslProcessor(
+ 		                loaded.styleXml,
+		                loaded.localeXml,
+		                lib
+		            );
+
+		            this._citeCsl = loaded;
+		        } catch (e) {
+		            this._citeCslError =
+		                e instanceof Error
+		                    ? e.message
+		                    : String(e);
+		        }
+		    }
+		}
+
 		this._citeGen = (this._citeGen || 0) + 1;
 		try { this.reconfigureEditors(); } catch (_) { wsCatch('citeLoad: reconfigureEditors', _); }
 	},

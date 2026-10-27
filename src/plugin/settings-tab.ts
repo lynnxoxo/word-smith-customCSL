@@ -2544,8 +2544,9 @@ export class WordSmithSettingTab extends PluginSettingTab {
 						d.setValue(s.citeStyle || 'apa').onChange((v) => { void (async () => {
 							s.citeStyle = v;
 							await plugin.saveSettings();
+							await plugin.citeLoad();
 							this.refreshDomState();
-							paint();
+								paint();
 						})(); });
 					});
 					// CUSTOMIZE (A739, the writer: "i don't see the customize option"): Your own, started from the style picked
@@ -2580,20 +2581,21 @@ export class WordSmithSettingTab extends PluginSettingTab {
 						show();
 						this.onRefresh(() => { show(); if (btn.hasClass('mod-warning')) disarm(); });
 					});
-				} },
-			{ name: 'Custom CSL file', desc: 'Path to a .csl style file in your Obsidian vault.',  visible: () => s.citeStyle === 'csl',
+				} },			
+			{ name: 'Custom CSL file',  desc: 'Path to a .csl style file in your Obsidian vault.', visible: () =>  s.citeStyle === 'csl',
     				render: (st) => {
-       					 st.addText((t) => {
-            						t.setPlaceholder('Styles/archaeology.csl')
-               						 .setValue(s.citeCslPath || '')
-              							  .onChange((value) => {
-          							          void (async () => {
-              							          s.citeCslPath = value.trim();
-               							         await plugin.saveSettings();
-               								     })();
-           							     });
-       						 });
-					  }
+        				st.addText((t) => {
+            				t.setPlaceholder('Styles/archaeology.csl')
+                				.setValue(s.citeCslPath || '')
+                					.onChange((value) => {
+                    				void (async () => {
+                        				s.citeCslPath = value.trim();
+                        				await plugin.saveSettings();
+                        				await plugin.citeLoad();
+                    				})();
+                				   });
+        				  });
+    				 }
 				},
 			{ name: 'Citation preview', desc: 'Two sources from your library, or two samples while there is none.',
 				render: (st) => {
